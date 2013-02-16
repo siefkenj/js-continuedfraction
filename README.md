@@ -42,11 +42,14 @@ decimal or continued fraction coefficient list views.
 *Usage of `ContinuedFraction.inputbox`*
 
 Arguments: object with properties
+
 	decimalInput: the `<input/>` where you type a decimal number
 	continuedFractionInput: the `<input/>` where you type a cf comma separated list
 	updateCallback: the function to be called whenever the cf is changed
 	createInputs: bool specifying if you'd like `<input/>` to be created for you
+
 Returns: object with properties
+
 	fraction: the ContinuedFraction object
 	decimalInput: the `<input/>` for decimals or `null`
 	continuedFractionInput: the `<input/>` for cf or `null`
