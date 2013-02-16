@@ -22,6 +22,8 @@
 class ContinuedFraction
     MAX_CONTINUANT: 100000
     constructor: (val) ->
+        @update(val)
+    update: (val=0) ->
         @continuants = []
         @convergents = []
         if val instanceof Array
@@ -82,49 +84,104 @@ class ContinuedFraction
             ret += "}"
             return ret
         return toLatex(@continuants.slice(0,maxLevels))
-
+    toString: ->
+        toString = (coeff) ->
+            if coeff.length == 0
+                return ""
+            if coeff.length == 1
+                return "#{coeff[0]}"
+            ret = ""
+            if coeff[0] != 0
+                ret += "#{coeff[0]} + "
+            ret += "1/("
+            ret += toLatex(coeff.slice(1))
+            ret += ")"
+            return ret
+        return toString(@continuants)
 
 ###
-# UI code
+# Synchronize input boxes to accept math input and update 
+# the continued fraction object.
+#
+# Arguments:
+#   decimalInput: the <input/> where you type a decimal number
+#   continuedFractionInput: the <input/> where you type a cf comma separated list
+#   updateCallback: the function to be called whenever the cf is changed
+#   createInputs: bool specifying if you'd like <input/> to be created for you
+# Returns: object with properties
+#   fraction: the ContinuedFraction object
+#   decimalInput: the <input/> for decimals or null
+#   continuedFractionInput: the <input/> for cf or null
+#   inputs: the parent element of the inputs or null
+#   updateCallback: the function called whenever the cf is changed or null
 ###
-$(document).ready ->
-    timer = new ExclusiveTimer
-    decimalTracker = new TextAreaChangeTracker('#decimal')
-    continuedfractionTracker = new TextAreaChangeTracker('#continuedfraction')
-    decimalTracker.change ->
-        timer.setTimeout(updateFraction, 250, 'decimal')
-    continuedfractionTracker.change ->
-        timer.setTimeout(updateFraction, 250, 'continuedfraction')
-
-updateFraction = (inputType) ->
-    switch inputType
-        when 'decimal'
-            frac = evaluateMath($('#decimal').val())
-            frac = new ContinuedFraction(frac)
-            $('#continuedfraction').val(frac.continuants)
-        when 'continuedfraction'
-            frac = evaluateMath($('#continuedfraction').val())
-            frac = (v for v in frac when v?)
-            frac = new ContinuedFraction(frac)
-            $('#decimal').val(frac.value)
-
-    table = $("<table></table>")
-    for [a,b],i in frac.convergents.slice(0,20)
-        table.append("""<tr>
-            <td>$\\displaystyle\\frac{p_{#{i}}}{q_{#{i}}} = 
-            \\displaystyle\\frac{#{a}}{#{b}}$
-            <span class="approx">$\\approx #{a/b}$</span>
-            </td>
-        </tr>""")
-    $('#convergents .content').html table
-    $('#prettyprinted .content').html """
-        \\[#{frac.toLatex(10)}\\]
-    """
-
+inputbox = (ops={}) ->
+    {decimalInput, continuedFractionInput} = ops
+    if typeof decimalInput is 'string'
+        decimalInput = document.querySelector(decimalInput)
+    if typeof continuedFractionInput is 'string'
+        continuedFractionInput = document.querySelector(continuedFractionInput)
     
+    if ops.createInputs
+        inputs = createFragment """
+            <div id="inputarea">
+                <div class="inputblock">
+                    <label for="decimal">Decimal:</label>
+                    <input id="decimal" name="decimal" />
+                </div>
+                <div class="inputblock">
+                    <label for="continuedfraction">Continued Fraction:</label>
+                    <input id="continuedfraction" name="continuedfraction" />
+                </div>
+            </div>
+            """
+        decimalInput = inputs.querySelector('#decimal')
+        continuedFractionInput = inputs.querySelector('#continuedfraction')
 
-    MathJax.Hub.Queue(["Typeset", MathJax.Hub, $('#continuants .content')[0]])
+    {updateCallback} = ops
+    frac = new ContinuedFraction
+    
+    updateFraction = (inputType) ->
+        switch inputType
+            when 'decimal'
+                frac.update evaluateMath(decimalInput.value) if decimalInput
+                continuedFractionInput.value = frac.continuants if continuedFractionInput
+            when 'continuedfraction'
+                values = evaluateMath(continuedFractionInput.value) if continuedFractionInput
+                values = (v for v in (values || []) when v?)
+                frac.update values
+                decimalInput.value = frac.value if decimalInput
+        updateCallback?(frac)
+    
+    timer = new ExclusiveTimer
+    if decimalInput?
+        decimalTracker = new TextAreaChangeTracker(decimalInput)
+        decimalTracker.change ->
+            timer.setTimeout(updateFraction, 250, 'decimal')
+    if continuedFractionInput
+        continuedfractionTracker = new TextAreaChangeTracker(continuedFractionInput)
+        continuedfractionTracker.change ->
+            timer.setTimeout(updateFraction, 250, 'continuedfraction')
 
+    ret =
+        fraction: frac
+        decimalInput: decimalInput
+        continuedFractionInput: continuedFractionInput
+        updateCallback: updateCallback
+        inputs: inputs
+    return ret
+
+###
+# Creates an html fragment from the given string
+###
+createFragment = (str) ->
+    frag = document.createDocumentFragment()
+    div = document.createElement('div')
+    div.innerHTML = str
+    while div.firstChild
+        frag.appendChild div.firstChild
+
+    return frag
 
 ###
 # ExclusiveTimer keeps a queue of all timeout
@@ -159,18 +216,18 @@ class ExclusiveTimer
 ###
 class TextAreaChangeTracker
     constructor: (@textarea) ->
-        @textarea = $(@textarea)
-        @value = @textarea.val()
+        if typeof @textarea is 'string'
+            @textarea = document.querySelector(@textarea)
+        @value = @textarea.value
         @onchangeCallbacks = []
 
-        @textarea.change => window.setTimeout(@_triggerIfChanged,100)
-        @textarea.keydown => window.setTimeout(@_triggerIfChanged,100)
-        @textarea.keypress => window.setTimeout(@_triggerIfChanged,100)
-        @textarea.blur => window.setTimeout(@_triggerIfChanged,100)
+        for event in ['change', 'keydown', 'keypress', 'blur']
+            @textarea.addEventListener(event, (=>
+                window.setTimeout(@_triggerIfChanged,100)))
 
     _triggerIfChanged: =>
         #@textarea.blur()
-        newVal = @textarea[0].value
+        newVal = @textarea.value
         if newVal != @value
             @value = newVal
             for c in @onchangeCallbacks
@@ -272,7 +329,6 @@ evaluateMath = (str) ->
         if t of MathFunctions
             tokens[i] = "MathFunctions.#{t}"
     str = tokens.join('')
-    console.log str
     if hasComma
         return (eval l for l in str.split(/,/))
     else
@@ -389,3 +445,12 @@ mathjs = (st) ->
             throw new Error("incorrect syntax in " + st + " at position " + j)
         st = st.slice(0, j + 1) + "factorial(" + st.slice(j + 1, i) + ")" + st.slice(i + 1)
     return st
+
+###
+# Add all our useful utilities as class methods
+###
+ContinuedFraction.MathFunctions = MathFunctions
+ContinuedFraction.evaluateMath = evaluateMath
+ContinuedFraction.inputbox = inputbox
+
+window.ContinuedFraction = ContinuedFraction

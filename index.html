@@ -22,6 +22,52 @@
 	</script>
 	<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 	<script src="js/js-continuedfraction.js"></script>
+	<script>
+		/*
+			Attach the inputs to a ContinuedFraction object and have things pretty-render
+			when the fraction changes.
+
+			Original Coffeescript:
+			$(document).ready ->
+			    ContinuedFraction.inputbox
+				decimalInput: '#decimal'
+				continuedFractionInput: '#continuedfraction'
+				updateCallback: (frac) ->
+				    table = $("<table></table>")
+				    for [a,b],i in frac.convergents.slice(0,20)
+					table.append("""<tr>
+					    <td>$\\displaystyle\\frac{p_{#{i}}}{q_{#{i}}} = 
+					    \\displaystyle\\frac{#{a}}{#{b}}$
+					    <span class="approx">$\\approx #{a/b}$</span>
+					    </td>
+					</tr>""")
+				    $('#convergents .content').html table
+				    $('#prettyprinted .content').html """
+					\\[#{frac.toLatex(10)}\\]
+				    """
+				    
+				    MathJax.Hub.Queue(["Typeset", MathJax.Hub, $('#continuants .content')[0]])
+				    return
+		*/
+		$(document).ready(function() {
+			ContinuedFraction.inputbox({
+				decimalInput: '#decimal',
+				continuedFractionInput: '#continuedfraction',
+				updateCallback: function(frac) {
+					var a, b, i, table, _i, _len, _ref, _ref1;
+					table = $("<table></table>");
+					_ref = frac.convergents.slice(0, 20);
+					for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+						_ref1 = _ref[i], a = _ref1[0], b = _ref1[1];
+						table.append("<tr>\n		<td>$\\displaystyle\\frac{p_{" + i + "}}{q_{" + i + "}} = \n		\\displaystyle\\frac{" + a + "}{" + b + "}$\n		<span class=\"approx\">$\\approx " + (a / b) + "$</span>\n		</td>\n</tr>");
+					}
+					$('#convergents .content').html(table);
+					$('#prettyprinted .content').html("\\[" + (frac.toLatex(10)) + "\\]");
+					MathJax.Hub.Queue(["Typeset", MathJax.Hub, $('#continuants .content')[0]]);
+				}
+			});
+		});
+	</script>
 
 	<!-- <link href='http://fonts.googleapis.com/css?family=Muli:400,400italic,300,300italic|Droid+Sans+Mono' rel='stylesheet' type='text/css'> -->
 	
@@ -41,7 +87,7 @@
 		</div>
 		<div id="displayarea">
 			<div id="convergents">
-				<label>Continuants:</label>
+				<label>Convergents:</label>
 				<div class="content"></div>
 			</div>
 			<div id="prettyprinted">
