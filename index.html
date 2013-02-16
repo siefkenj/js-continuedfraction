@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Continued Fraction Calculator</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+	
+	<script type="text/x-mathjax-config">
+		MathJax.Hub.Config({
+			skipStartupTypeset: true,
+			tex2jax: {
+				inlineMath: [["$","$"],["\\(","\\)"]]
+			},
+			TeX: {
+				Macros: {
+					d: '{\\mathrm d}',
+					R: '{\\mathbb R}',
+					Z: '{\\mathbb Z}',
+					C: '{\\mathbb C}'
+				}
+			}
+		});
+	</script>
+	<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+	<script src="js/js-continuedfraction.js"></script>
+
+	<!-- <link href='http://fonts.googleapis.com/css?family=Muli:400,400italic,300,300italic|Droid+Sans+Mono' rel='stylesheet' type='text/css'> -->
+	
+	<link rel="stylesheet" href="css/js-continuedfraction.css">
+</head>
+<body>
+	<div id="container">
+		<div id="inputarea">
+			<div class="inputblock">
+				<label for="decimal">Decimal:</label>
+				<input id="decimal" name="decimal" />
+			</div>
+			<div class="inputblock">
+				<label for="continuedfraction">Continued Fraction:</label>
+				<input id="continuedfraction" name="continuedfraction" />
+			</div>
+		</div>
+		<div id="displayarea">
+			<div id="convergents">
+				<label>Continuants:</label>
+				<div class="content"></div>
+			</div>
+			<div id="prettyprinted">
+				<label>Pretty Printed:</label>
+				<div class="content"></div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
